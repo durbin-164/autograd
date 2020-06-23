@@ -87,6 +87,15 @@ def tensor_sum(t: Tensor) -> Tensor:
 
 
 def add(t1: Tensor, t2: Tensor) ->Tensor:
+    '''
+    y = a + b
+    we have dL/dy
+    So, dL/da = dL/dy * dy/da = dL/dy * 1 = dL/dy
+
+    or
+    let think y gradient change by eps
+    So, y = a+eps + b = a + b + eps
+    '''
     data = t1.data + t2.data
     requires_grad = t1.requires_grad or t2.requires_grad
 
@@ -125,3 +134,78 @@ def add(t1: Tensor, t2: Tensor) ->Tensor:
     return Tensor(data, 
                   requires_grad,
                   depends_on)
+
+
+def mul(t1: Tensor, t2: Tensor) ->Tensor:
+    '''
+    y = a * b
+    we have dL/dy
+    So, dL/da = dL/dy * dy/da = dL/dy * b
+    And dL/db = DL/dy * dy/db = dL/dy * a
+
+    or 
+
+    Let y change by y = (a+eps) * b
+    So, y = a * b + (eps * b)
+    So gradient change (by eps * b)
+    '''
+    data = t1.data * t2.data
+    requires_grad = t1.requires_grad or t2.requires_grad
+
+    depends_on: List[Dependency] = []
+
+    if t1.requires_grad:
+        def grad_fn1(grad: np.ndarray) -> np.ndarray:
+
+            grad = grad * t2.data
+
+            ndims_added = grad.ndim - t1.data.ndim
+
+            for _ in range(ndims_added):
+                grad = grad.sum(axis = 0)
+
+            for i, dim in enumerate(t1.shape):
+                if dim == 1:
+                    grad = grad.sum(axis = i, keepdims = True)
+
+            return grad
+        depends_on.append(Dependency(t1, grad_fn1))
+
+    if t2.requires_grad:
+        def grad_fn2(grad: np.ndarray) -> np.ndarray:
+
+            grad = grad * t1.data
+
+            ndims_added = grad.ndim - t2.data.ndim
+
+            for _ in range(ndims_added):
+                grad = grad.sum(axis = 0)
+
+            for i, dim in enumerate(t2.shape):
+                if dim == 1:
+                    grad = grad.sum(axis = i, keepdims = True)
+                    
+            return grad
+
+        depends_on.append(Dependency(t2, grad_fn2))
+
+    return Tensor(data, 
+                  requires_grad,
+                  depends_on)
+
+
+def neg(t1: Tensor) -> Tensor:
+    data = -t1.data
+    requires_grad  = t1.requires_grad
+
+    if requires_grad:
+        depends_on = [Dependency(t1, lambda x : -x)]
+    else:
+        depends_on = []
+
+    return Tensor(data,
+                 requires_grad,
+                 depends_on)
+
+def sub(t1: Tensor, t2: Tensor) -> Tensor:
+    return add(t1, neg(t2))
