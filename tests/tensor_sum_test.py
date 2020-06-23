@@ -16,5 +16,4 @@ class TestTensorSum(unittest.TestCase):
         t2 = t1.sum()
 
         t2.backward(Tensor(3))
-
         assert t1.grad.data.tolist() == [3,3,3]
