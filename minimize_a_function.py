@@ -2,12 +2,12 @@
 Simple implimentation of minimize a simple function
 '''
 
-from autograd.tensor import Tensor, tensor_sum, mul, add
+from autograd.tensor import Tensor
 
 #Simple gradient calculation
 x = Tensor(10, requires_grad=True)
-y = mul(x, x)
-z =  mul(y,y)
+y = x * x
+z =  y * y
 
 z.backward()
 
@@ -19,11 +19,12 @@ print(y.grad)
 x = Tensor([10, 5, -10, 5, 2], requires_grad=True)
 
 for i in range(10):
-    square_sum = mul(x, x).sum()
+    x.zero_grad()
+    square_sum = (x * x).sum()
     square_sum.backward()
 
-    del_x = mul(Tensor(0.1, requires_grad=True), x.grad)
+    del_x = 0.1 * x.grad
 
-    x = Tensor(x.data - del_x.data, requires_grad=True)
+    x -= del_x
 
     print(i, square_sum)
