@@ -314,7 +314,7 @@ def _slice(t:Tensor, idxs) -> Tensor:
             bigger_grad[idxs] = grad
 
             return bigger_grad
-        depends_on = Dependency(t, grad_fn)
+        depends_on = [Dependency(t, grad_fn)]
 
     else:
         depends_on = []
